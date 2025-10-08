@@ -121,51 +121,22 @@ const PositionGroup: React.FC<{
   group: HierarchicalPositionGroup;
   selectedItemIds: Set<string>;
   onToggleItem: (itemId: string) => void;
-  onTogglePosition: (itemIds: string[]) => void;
-}> = ({ group, selectedItemIds, onToggleItem, onTogglePosition }) => {
+}> = ({ group, selectedItemIds, onToggleItem }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-
-  const allItemIds = useMemo(() => {
-    return group.transactions.flatMap(t => t.items.map(item => item.id));
-  }, [group.transactions]);
-
-  const selectedCount = useMemo(() => {
-    return allItemIds.filter(id => selectedItemIds.has(id)).length;
-  }, [allItemIds, selectedItemIds]);
-
-  const allSelected = selectedCount === allItemIds.length;
-  const someSelected = selectedCount > 0 && selectedCount < allItemIds.length;
-
-  const handleTogglePosition = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onTogglePosition(allItemIds);
-  };
 
   return (
     <div>
-      <div className="flex items-center py-1.5 group hover:bg-slate-50 rounded px-2">
-        <input
-          type="checkbox"
-          checked={allSelected}
-          ref={(input) => {
-            if (input) input.indeterminate = someSelected;
-          }}
-          onChange={handleTogglePosition}
-          onClick={(e) => e.stopPropagation()}
-          className="rounded border-slate-400 text-blue-600 mr-2 flex-shrink-0 focus:ring-blue-500"
-        />
-        <div
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center cursor-pointer flex-grow min-w-0"
-        >
-          <div className="text-slate-500 group-hover:text-slate-900">
-            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-          </div>
-          <h4 className="text-sm text-slate-800 ml-2 flex-grow min-w-0">
-            {group.baseItemName}
-          </h4>
-          <span className="text-sm text-slate-500 ml-auto">({group.itemCount})</span>
+      <div
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center cursor-pointer py-1.5 group hover:bg-slate-50 rounded px-2"
+      >
+        <div className="text-slate-500 group-hover:text-slate-900">
+          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
         </div>
+        <h4 className="text-sm text-slate-800 ml-2 flex-grow min-w-0">
+          {group.baseItemName}
+        </h4>
+        <span className="text-sm text-slate-500 ml-auto">({group.itemCount})</span>
       </div>
       {isExpanded && (
         <div className="space-y-1 mt-1 pl-6">
@@ -187,8 +158,7 @@ const WorkGroup: React.FC<{
   group: HierarchicalWorkGroup;
   selectedItemIds: Set<string>;
   onToggleItem: (itemId: string) => void;
-  onTogglePosition: (itemIds: string[]) => void;
-}> = ({ group, selectedItemIds, onToggleItem, onTogglePosition }) => {
+}> = ({ group, selectedItemIds, onToggleItem }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
@@ -213,7 +183,6 @@ const WorkGroup: React.FC<{
               group={pos}
               selectedItemIds={selectedItemIds}
               onToggleItem={onToggleItem}
-              onTogglePosition={onTogglePosition}
             />
           ))}
         </div>
@@ -233,16 +202,38 @@ const PositionCard: React.FC<{
     return group.allItemIds.filter((id) => selectedItemIds.has(id)).length;
   }, [group.allItemIds, selectedItemIds]);
 
+  const allSelected = selectedCount === group.allItemIds.length;
+  const someSelected = selectedCount > 0 && selectedCount < group.allItemIds.length;
+
+  const handleTogglePosition = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTogglePosition(group.allItemIds);
+  };
+
+  const handleHeaderClick = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow border border-slate-200">
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-start cursor-pointer p-4 hover:bg-slate-50 rounded-t-lg"
-      >
+      <div className="flex items-start p-4 hover:bg-slate-50 rounded-t-lg">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(input) => {
+            if (input) input.indeterminate = someSelected;
+          }}
+          onChange={handleTogglePosition}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded border-slate-400 text-blue-600 mt-1.5 mr-3 flex-shrink-0 focus:ring-blue-500"
+        />
         <span className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded-full text-sm font-bold flex-shrink-0 mt-1">
           {group.positionNumber}
         </span>
-        <div className="flex-grow min-w-0 ml-4">
+        <div
+          onClick={handleHeaderClick}
+          className="flex-grow min-w-0 ml-4 cursor-pointer"
+        >
           <h2 className="text-base font-semibold text-slate-900">
             {group.mainInfo.service_description}
           </h2>
@@ -252,7 +243,10 @@ const PositionCard: React.FC<{
             </p>
           )}
         </div>
-        <div className="flex items-center flex-shrink-0 ml-4 mt-1">
+        <div
+          onClick={handleHeaderClick}
+          className="flex items-center flex-shrink-0 ml-4 mt-1 cursor-pointer"
+        >
           <div className="text-right mr-3">
             <span className="text-sm text-slate-600 font-medium">
               {selectedCount} / {group.itemCount} работ
@@ -271,7 +265,6 @@ const PositionCard: React.FC<{
               group={workGroup}
               selectedItemIds={selectedItemIds}
               onToggleItem={onToggleItem}
-              onTogglePosition={onTogglePosition}
             />
           ))}
         </div>

@@ -26,7 +26,8 @@ export interface CreateUpdParams {
 
 export async function getAvailableReceptionItems(
   counterpartyId: string,
-  subdivisionId?: string
+  subdivisionId?: string,
+  receptionId?: string
 ): Promise<AvailableReceptionItem[]> {
   let query = supabase
     .from('reception_items')
@@ -58,6 +59,10 @@ export async function getAvailableReceptionItems(
 
   if (subdivisionId) {
     query = query.eq('accepted_motors.subdivision_id', subdivisionId);
+  }
+
+  if (receptionId) {
+    query = query.eq('accepted_motors.receptions.id', receptionId);
   }
 
   const { data, error } = await query;
@@ -120,6 +125,20 @@ export async function getSubdivisions() {
     .from('subdivisions')
     .select('id, name, code')
     .order('name');
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function getReceptionsByCounterparty(counterpartyId: string) {
+  const { data, error } = await supabase
+    .from('receptions')
+    .select('id, reception_number, reception_date')
+    .eq('counterparty_id', counterpartyId)
+    .order('reception_date', { ascending: false });
 
   if (error) {
     throw error;

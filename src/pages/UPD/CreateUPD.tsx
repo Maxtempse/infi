@@ -8,7 +8,8 @@ import {
   getAvailableReceptionItems,
   getCounterparties,
   getSubdivisions,
-  createUpdAndLinkReceptionItems, // <-- ИСПРАВЛЕНО: Используем новое имя функции
+  getReceptionsByCounterparty,
+  createUpdAndLinkReceptionItems,
   AvailableReceptionItem,
 } from '../../services/updService';
 
@@ -24,6 +25,12 @@ interface Subdivision {
   code: string;
 }
 
+interface Reception {
+  id: string;
+  reception_number: string;
+  reception_date: string;
+}
+
 export default function CreateUPD() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -32,10 +39,12 @@ export default function CreateUPD() {
 
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
   const [subdivisions, setSubdivisions] = useState<Subdivision[]>([]);
+  const [receptions, setReceptions] = useState<Reception[]>([]);
   const [availableItems, setAvailableItems] = useState<AvailableReceptionItem[]>([]);
 
   const [selectedCounterpartyId, setSelectedCounterpartyId] = useState<string>('');
   const [selectedSubdivisionId, setSelectedSubdivisionId] = useState<string>('');
+  const [selectedReceptionId, setSelectedReceptionId] = useState<string>('');
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
 
   const [documentNumber, setDocumentNumber] = useState('');
@@ -50,12 +59,23 @@ export default function CreateUPD() {
 
   useEffect(() => {
     if (selectedCounterpartyId) {
+      loadReceptions();
+    } else {
+      setReceptions([]);
+      setSelectedReceptionId('');
+      setAvailableItems([]);
+      setSelectedItemIds(new Set());
+    }
+  }, [selectedCounterpartyId]);
+
+  useEffect(() => {
+    if (selectedCounterpartyId) {
       loadAvailableItems();
     } else {
       setAvailableItems([]);
       setSelectedItemIds(new Set());
     }
-  }, [selectedCounterpartyId, selectedSubdivisionId]);
+  }, [selectedCounterpartyId, selectedSubdivisionId, selectedReceptionId]);
 
   async function loadCounterparties() {
     try {
@@ -77,13 +97,24 @@ export default function CreateUPD() {
     }
   }
 
+  async function loadReceptions() {
+    try {
+      const data = await getReceptionsByCounterparty(selectedCounterpartyId);
+      setReceptions(data);
+    } catch (err) {
+      setError('Ошибка загрузки приемок');
+      console.error(err);
+    }
+  }
+
   async function loadAvailableItems() {
     setLoading(true);
     setError(null);
     try {
       const data = await getAvailableReceptionItems(
         selectedCounterpartyId,
-        selectedSubdivisionId || undefined
+        selectedSubdivisionId || undefined,
+        selectedReceptionId || undefined
       );
       setAvailableItems(data);
       setSelectedItemIds(new Set());
@@ -203,7 +234,7 @@ export default function CreateUPD() {
           <h2 className="text-lg font-semibold text-slate-900 mb-4">
             Фильтры
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Контрагент *
@@ -218,6 +249,25 @@ export default function CreateUPD() {
                 {counterparties.map((cp) => (
                   <option key={cp.id} value={cp.id}>
                     {cp.name} (ИНН: {cp.inn})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Приемки
+              </label>
+              <select
+                value={selectedReceptionId}
+                onChange={(e) => setSelectedReceptionId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!selectedCounterpartyId}
+              >
+                <option value="">Все приемки</option>
+                {receptions.map((rec) => (
+                  <option key={rec.id} value={rec.id}>
+                    {rec.reception_number} ({new Date(rec.reception_date).toLocaleDateString('ru-RU')})
                   </option>
                 ))}
               </select>

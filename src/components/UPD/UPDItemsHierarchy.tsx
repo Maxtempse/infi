@@ -280,6 +280,7 @@ export interface UPDItemsHierarchyProps {
   selectedItemIds: Set<string>;
   onToggleItem: (itemId: string) => void;
   onToggleAll: () => void;
+  onToggleMultiple: (itemIds: string[]) => void;
 }
 
 export const UPDItemsHierarchy: React.FC<UPDItemsHierarchyProps> = ({
@@ -287,23 +288,10 @@ export const UPDItemsHierarchy: React.FC<UPDItemsHierarchyProps> = ({
   selectedItemIds,
   onToggleItem,
   onToggleAll,
+  onToggleMultiple,
 }) => {
   const handleTogglePosition = (itemIds: string[]) => {
-    const allSelected = itemIds.every(id => selectedItemIds.has(id));
-
-    if (allSelected) {
-      itemIds.forEach(id => {
-        if (selectedItemIds.has(id)) {
-          onToggleItem(id);
-        }
-      });
-    } else {
-      itemIds.forEach(id => {
-        if (!selectedItemIds.has(id)) {
-          onToggleItem(id);
-        }
-      });
-    }
+    onToggleMultiple(itemIds);
   };
   const hierarchicalData: HierarchicalTopLevelGroup[] = useMemo(() => {
     const positionMap = new Map<number, PositionableItem[]>();

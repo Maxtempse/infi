@@ -105,6 +105,19 @@ export default function CreateUPD() {
     setSelectedItemIds(newSelection);
   }
 
+  function toggleMultipleItems(itemIds: string[]) {
+    const newSelection = new Set(selectedItemIds);
+    const allSelected = itemIds.every(id => newSelection.has(id));
+
+    if (allSelected) {
+      itemIds.forEach(id => newSelection.delete(id));
+    } else {
+      itemIds.forEach(id => newSelection.add(id));
+    }
+
+    setSelectedItemIds(newSelection);
+  }
+
   function toggleSelectAll() {
     if (selectedItemIds.size === availableItems.length) {
       setSelectedItemIds(new Set());
@@ -248,6 +261,7 @@ export default function CreateUPD() {
                   selectedItemIds={selectedItemIds}
                   onToggleItem={toggleItemSelection}
                   onToggleAll={toggleSelectAll}
+                  onToggleMultiple={toggleMultipleItems}
                 />
               )}
             </div>

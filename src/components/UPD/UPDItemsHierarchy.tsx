@@ -121,22 +121,51 @@ const PositionGroup: React.FC<{
   group: HierarchicalPositionGroup;
   selectedItemIds: Set<string>;
   onToggleItem: (itemId: string) => void;
-}> = ({ group, selectedItemIds, onToggleItem }) => {
+  onTogglePosition: (itemIds: string[]) => void;
+}> = ({ group, selectedItemIds, onToggleItem, onTogglePosition }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+
+  const allItemIds = useMemo(() => {
+    return group.transactions.flatMap(t => t.items.map(item => item.id));
+  }, [group.transactions]);
+
+  const selectedCount = useMemo(() => {
+    return allItemIds.filter(id => selectedItemIds.has(id)).length;
+  }, [allItemIds, selectedItemIds]);
+
+  const allSelected = selectedCount === allItemIds.length;
+  const someSelected = selectedCount > 0 && selectedCount < allItemIds.length;
+
+  const handleTogglePosition = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTogglePosition(allItemIds);
+  };
 
   return (
     <div>
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center cursor-pointer py-1.5 group hover:bg-slate-50 rounded px-2"
-      >
-        <div className="text-slate-500 group-hover:text-slate-900">
-          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+      <div className="flex items-center py-1.5 group hover:bg-slate-50 rounded px-2">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(input) => {
+            if (input) input.indeterminate = someSelected;
+          }}
+          onChange={handleTogglePosition}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded border-slate-400 text-blue-600 mr-2 flex-shrink-0 focus:ring-blue-500"
+        />
+        <div
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center cursor-pointer flex-grow min-w-0"
+        >
+          <div className="text-slate-500 group-hover:text-slate-900">
+            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          </div>
+          <h4 className="text-sm text-slate-800 ml-2 flex-grow min-w-0">
+            {group.baseItemName}
+          </h4>
+          <span className="text-sm text-slate-500 ml-auto">({group.itemCount})</span>
         </div>
-        <h4 className="text-sm text-slate-800 ml-2 flex-grow min-w-0">
-          {group.baseItemName}
-        </h4>
-        <span className="text-sm text-slate-500 ml-auto">({group.itemCount})</span>
       </div>
       {isExpanded && (
         <div className="space-y-1 mt-1 pl-6">
@@ -158,7 +187,8 @@ const WorkGroup: React.FC<{
   group: HierarchicalWorkGroup;
   selectedItemIds: Set<string>;
   onToggleItem: (itemId: string) => void;
-}> = ({ group, selectedItemIds, onToggleItem }) => {
+  onTogglePosition: (itemIds: string[]) => void;
+}> = ({ group, selectedItemIds, onToggleItem, onTogglePosition }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
@@ -183,6 +213,7 @@ const WorkGroup: React.FC<{
               group={pos}
               selectedItemIds={selectedItemIds}
               onToggleItem={onToggleItem}
+              onTogglePosition={onTogglePosition}
             />
           ))}
         </div>
@@ -195,7 +226,8 @@ const PositionCard: React.FC<{
   group: HierarchicalTopLevelGroup;
   selectedItemIds: Set<string>;
   onToggleItem: (itemId: string) => void;
-}> = ({ group, selectedItemIds, onToggleItem }) => {
+  onTogglePosition: (itemIds: string[]) => void;
+}> = ({ group, selectedItemIds, onToggleItem, onTogglePosition }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const selectedCount = useMemo(() => {
     return group.allItemIds.filter((id) => selectedItemIds.has(id)).length;
@@ -239,6 +271,7 @@ const PositionCard: React.FC<{
               group={workGroup}
               selectedItemIds={selectedItemIds}
               onToggleItem={onToggleItem}
+              onTogglePosition={onTogglePosition}
             />
           ))}
         </div>
@@ -262,6 +295,23 @@ export const UPDItemsHierarchy: React.FC<UPDItemsHierarchyProps> = ({
   onToggleItem,
   onToggleAll,
 }) => {
+  const handleTogglePosition = (itemIds: string[]) => {
+    const allSelected = itemIds.every(id => selectedItemIds.has(id));
+
+    if (allSelected) {
+      itemIds.forEach(id => {
+        if (selectedItemIds.has(id)) {
+          onToggleItem(id);
+        }
+      });
+    } else {
+      itemIds.forEach(id => {
+        if (!selectedItemIds.has(id)) {
+          onToggleItem(id);
+        }
+      });
+    }
+  };
   const hierarchicalData: HierarchicalTopLevelGroup[] = useMemo(() => {
     const positionMap = new Map<number, PositionableItem[]>();
     items.forEach((item) => {
@@ -379,6 +429,7 @@ export const UPDItemsHierarchy: React.FC<UPDItemsHierarchyProps> = ({
             group={group}
             selectedItemIds={selectedItemIds}
             onToggleItem={onToggleItem}
+            onTogglePosition={handleTogglePosition}
           />
         ))}
       </div>
